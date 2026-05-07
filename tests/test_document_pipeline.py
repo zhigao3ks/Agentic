@@ -32,7 +32,6 @@ async def setup_data(s):
     s.add(kb)
     await s.flush()
 
-    # 直接在存储目录下创建测试文件
     storage_dir = tempfile.mkdtemp()
     file_path = os.path.join(storage_dir, str(kb.id))
     os.makedirs(file_path, exist_ok=True)
@@ -58,10 +57,17 @@ class TestDocumentPipeline:
     async def test_process_document_creates_chunks(self, s, setup_data, monkeypatch):
         doc, storage_dir = setup_data
 
-        from app.services.document_pipeline import process_document
-        # 重定向存储目录到 temp
+        # Mock 向量存储使用临时目录
+        chroma_tmp = tempfile.mkdtemp()
+        from app.services.dependencies import set_embedding_service, set_vector_store
+        from app.services.embedding.fake import FakeEmbeddingService
+        from app.services.vector_store.chroma_store import ChromaVectorStore
+        set_embedding_service(FakeEmbeddingService(dimension=128))
+        set_vector_store(ChromaVectorStore(persist_dir=chroma_tmp))
+
         monkeypatch.setattr("app.core.config.settings.STORAGE_DIR", storage_dir)
 
+        from app.services.document_pipeline import process_document
         await process_document(s, doc.id)
 
         assert doc.status.value == "ready"
@@ -74,9 +80,11 @@ class TestDocumentPipeline:
         chunks = result.scalars().all()
         assert len(chunks) == doc.chunk_count
         assert chunks[0].content
+        assert chunks[0].embedding_id is not None  # 验证已向量化
+
+        import shutil
+        shutil.rmtree(chroma_tmp, ignore_errors=True)
 
     async def test_process_document_not_found(self, s):
         from app.services.document_pipeline import process_document
-
-        # 不应抛出异常
         await process_document(s, uuid.uuid4())

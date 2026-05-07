@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import get_logger
 from app.models.chunk import Chunk
 from app.models.document import Document, DocumentStatus
-from app.services import chunker, parser_service, text_cleaner
+from app.services import chunker, dependencies, indexing, parser_service, text_cleaner
 from app.services.file_storage import get_file_path
 
 logger = get_logger(__name__)
@@ -57,7 +57,12 @@ async def process_document(db: AsyncSession, document_id: uuid.UUID) -> None:
             )
             db.add(chunk_record)
 
-        # 5. 更新文档状态
+        # 5. 向量化 + 写入向量库
+        embedding_svc = dependencies.get_embedding_service()
+        vector_store = dependencies.get_vector_store()
+        await indexing.index_chunks(db, doc.kb_id, embedding_svc, vector_store)
+
+        # 6. 更新文档状态
         doc.chunk_count = len(chunks)
         doc.status = DocumentStatus.READY
         await db.flush()
