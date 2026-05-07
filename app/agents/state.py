@@ -11,6 +11,8 @@ class AgentState(TypedDict):
     messages: Annotated[list[dict], operator.add]
     query_analysis: dict
     retrieved_chunks: list[dict]
+    tool_calls: list[dict]
+    tool_results: list[dict]
     answer: str
     citations: list[dict]
     verification: dict
@@ -28,6 +30,8 @@ def make_initial_state(query: str, kb_id: str, session_id: str | None = None) ->
         messages=[],
         query_analysis={},
         retrieved_chunks=[],
+        tool_calls=[],
+        tool_results=[],
         answer="",
         citations=[],
         verification={},
