@@ -39,7 +39,8 @@ def _reset_engine() -> None:
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with _get_session_factory()() as session:
-        yield session
+        async with session.begin():
+            yield session
 
 
 async def init_db() -> None:

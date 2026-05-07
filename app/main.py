@@ -36,6 +36,11 @@ async def app_exception_handler(_request: Request, exc: AppException) -> JSONRes
     )
 
 
+from app.api.auth import router as auth_router
+
+app.include_router(auth_router)
+
+
 @app.get("/api/health")
 async def health_check() -> dict:
     return {"status": "ok", "version": settings.APP_VERSION}
