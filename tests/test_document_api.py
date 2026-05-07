@@ -1,5 +1,6 @@
 """测试 app/api/document.py 端点。"""
 
+import tempfile
 from io import BytesIO
 
 import pytest
@@ -10,9 +11,17 @@ from app.db.session import init_db
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def _init_tables():
+async def _setup():
     await init_db()
+    from app.services.dependencies import set_embedding_service, set_vector_store
+    from app.services.embedding.fake import FakeEmbeddingService
+    from app.services.vector_store.chroma_store import ChromaVectorStore
+    tmp = tempfile.mkdtemp()
+    set_embedding_service(FakeEmbeddingService(dimension=128))
+    set_vector_store(ChromaVectorStore(persist_dir=tmp))
     yield
+    import shutil
+    shutil.rmtree(tmp, ignore_errors=True)
 
 
 @pytest.fixture
