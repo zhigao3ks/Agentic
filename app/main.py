@@ -43,6 +43,7 @@ from app.api.document import router as doc_router
 from app.api.knowledge_base import router as kb_router
 from app.api.mcp import router as mcp_router
 from app.api.retrieval import router as retrieval_router
+from app.api.ws import router as ws_router
 
 app.include_router(auth_router)
 app.include_router(kb_router)
@@ -51,6 +52,7 @@ app.include_router(retrieval_router)
 app.include_router(chat_router)
 app.include_router(agent_router)
 app.include_router(mcp_router)
+app.include_router(ws_router)
 
 
 @app.get("/api/health")
