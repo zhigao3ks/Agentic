@@ -18,13 +18,15 @@ from app.services.vector_store.base import VectorStore
 _bm25_cache: dict[str, BM25Retriever] = {}
 
 
-def _ensure_bm25_index(kb_id: str, chunks: list[dict]) -> BM25Retriever:
-    """确保 BM25 索引存在，不存在则构建。"""
+def _ensure_bm25_index(kb_id: str, chunks: list[dict]) -> BM25Retriever | None:
+    """确保 BM25 索引存在，不存在则构建。空语料返回 None。"""
     if kb_id not in _bm25_cache:
+        if not chunks:
+            return None
         bm25 = BM25Retriever()
         bm25.build_index(kb_id, chunks)
         _bm25_cache[kb_id] = bm25
-    return _bm25_cache[kb_id]
+    return _bm25_cache.get(kb_id)
 
 
 async def _load_kb_chunks(db: AsyncSession, kb_id: uuid.UUID) -> list[dict]:
@@ -70,7 +72,7 @@ async def hybrid_search(
     # 2. BM25 检索
     all_chunks = await _load_kb_chunks(db, kb_id)
     bm25 = _ensure_bm25_index(str(kb_id), all_chunks)
-    bm25_results = bm25.retrieve(query, str(kb_id), top_k=20)
+    bm25_results = bm25.retrieve(query, str(kb_id), top_k=20) if bm25 else []
 
     # 3. RRF 融合
     fused = rrf_fusion(vector_results, bm25_results, top_k=20)
