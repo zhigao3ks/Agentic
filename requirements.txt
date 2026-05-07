@@ -11,6 +11,7 @@ pydantic-settings>=2.2.0
 # --- 数据库与缓存 ---
 sqlalchemy[asyncio]>=2.0.30
 asyncpg>=0.29.0
+aiosqlite>=0.20.0
 redis>=5.0.0
 
 # --- 认证与安全 ---
