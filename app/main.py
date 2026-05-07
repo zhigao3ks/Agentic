@@ -37,8 +37,10 @@ async def app_exception_handler(_request: Request, exc: AppException) -> JSONRes
 
 
 from app.api.auth import router as auth_router
+from app.api.knowledge_base import router as kb_router
 
 app.include_router(auth_router)
+app.include_router(kb_router)
 
 
 @app.get("/api/health")

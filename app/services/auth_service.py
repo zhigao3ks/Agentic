@@ -2,13 +2,26 @@
 
 import uuid
 
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictException, UnauthorizedException
 from app.core.security import create_access_token, hash_password, verify_password, verify_token
+from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
+
+security = HTTPBearer()
+
+
+async def get_current_user_dependency(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """FastAPI 依赖：从 Authorization Header 解析当前用户。"""
+    return await get_current_user(db, credentials.credentials)
 
 
 async def register(db: AsyncSession, data: UserCreate) -> dict:

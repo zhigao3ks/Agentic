@@ -1,16 +1,16 @@
 """认证 API 路由。"""
 
 from fastapi import APIRouter, Depends
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.auth import RegisterResponse, TokenResponse, UserLogin
 from app.schemas.user import UserCreate, UserResponse
 from app.services import auth_service
+from app.services.auth_service import get_current_user_dependency
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
-security = HTTPBearer()
 
 
 @router.post("/register", response_model=RegisterResponse, status_code=201)
@@ -26,9 +26,5 @@ async def login(body: UserLogin, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-async def me(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db),
-):
-    user = await auth_service.get_current_user(db, credentials.credentials)
+async def me(user: User = Depends(get_current_user_dependency)):
     return UserResponse.model_validate(user)
