@@ -26,6 +26,7 @@ htmlcov/
 storage/uploads/
 storage/chroma/
 storage/logs/
+storage/*.db
 
 # Docker
 docker-compose.override.yml
