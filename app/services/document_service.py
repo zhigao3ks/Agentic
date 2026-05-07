@@ -12,7 +12,7 @@ from app.models.document import Document, DocumentStatus
 from app.models.knowledge_base import KnowledgeBase
 from app.models.user import User
 from app.schemas.document import DocumentListResponse, DocumentResponse, DocumentUploadResponse
-from app.services import file_storage, file_validator, parser_service
+from app.services import document_pipeline, file_storage, file_validator, parser_service
 
 
 async def upload_document(
@@ -51,6 +51,10 @@ async def upload_document(
     )
     db.add(doc)
     await db.flush()
+    await db.refresh(doc)
+
+    # 同步执行文档处理流水线（后续可改为后台任务）
+    await document_pipeline.process_document(db, doc.id)
     await db.refresh(doc)
 
     return DocumentUploadResponse(

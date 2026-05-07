@@ -53,7 +53,7 @@ class TestUploadAPI:
         data = resp.json()
         assert data["filename"] == "readme.txt"
         assert data["file_type"] == "txt"
-        assert data["status"] == "uploaded"
+        assert data["status"] == "ready"  # 流水线同步处理后状态为 ready
 
     async def test_upload_no_auth(self, client):
         token = _register_and_get_token(client)
