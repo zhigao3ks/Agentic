@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP-Agentic RAG — 联调测试面板</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.header{background:#1e293b;padding:16px 24px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:18px;color:#38bdf8}
+.header .status{font-size:12px;padding:4px 12px;border-radius:12px}
+.status.online{background:#065f46;color:#6ee7b7}
+.status.offline{background:#7f1d1d;color:#fca5a5}
+.container{display:grid;grid-template-columns:380px 1fr;gap:16px;padding:16px;height:calc(100vh - 57px)}
+.panel{background:#1e293b;border-radius:8px;border:1px solid #334155;padding:16px;overflow-y:auto}
+.panel h2{font-size:14px;color:#94a3b8;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #334155}
+.form-group{margin-bottom:10px}
+.form-group label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 10px;background:#0f172a;border:1px solid #334155;border-radius:4px;color:#e2e8f0;font-size:13px}
+.form-group textarea{min-height:80px;resize:vertical}
+.btn{display:inline-block;padding:8px 16px;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:500}
+.btn-primary{background:#1d4ed8;color:#fff}.btn-primary:hover{background:#1e40af}
+.btn-success{background:#065f46;color:#6ee7b7}.btn-success:hover{background:#064e3b}
+.btn-danger{background:#991b1b;color:#fca5a5}.btn-danger:hover{background:#7f1d1d}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-block{display:block;width:100%;margin-top:4px}
+.token{color:#38bdf8;font-size:12px;word-break:break-all}
+.token-box{background:#0f172a;border:1px solid #334155;border-radius:4px;padding:8px;margin:2px 0}
+.row{display:flex;gap:8px}.row>*{flex:1}
+#chat-messages{height:300px;overflow-y:auto;margin-bottom:8px}
+#chat-messages .msg{margin-bottom:8px;padding:8px;border-radius:4px;font-size:13px;line-height:1.5}
+.msg.user{background:#1e3a5f}.msg.assistant{background:#0f172a;border:1px solid #334155}
+.msg.system{background:#1a2e1a;color:#6ee7b7;font-size:11px}
+#stream-output{height:300px;overflow-y:auto;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:12px;font-size:12px;font-family:monospace;line-height:1.6}
+#stream-output .event{margin-bottom:4px}
+.ev-label{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;margin-right:6px}
+.ev-answer{background:#065f46;color:#6ee7b7}.ev-tool{background:#1d4ed8;color:#93c5fd}
+.ev-citation{background:#92400e;color:#fcd34d}.ev-done{background:#4c1d95;color:#c4b5fd}
+.ev-error{background:#991b1b;color:#fca5a5}.ev-info{background:#334155;color:#94a3b8}
+.result-box{background:#0f172a;border:1px solid #334155;border-radius:4px;padding:8px;max-height:200px;overflow-y:auto;font-size:12px;white-space:pre-wrap;margin-top:4px}
+pre{font-size:11px;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>&#9881; MCP-Agentic RAG — 联调测试面板</h1>
+  <span id="api-status" class="status offline">未连接</span>
+</div>
+
+<div class="container">
+  <!-- 左侧配置面板 -->
+  <div class="panel" style="display:flex;flex-direction:column;gap:8px">
+    <h2>1. 服务配置</h2>
+    <div class="form-group">
+      <label>API 地址</label>
+      <input id="api-base" value="http://localhost:8000" placeholder="http://localhost:8000">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="checkHealth()">检测服务</button>
+
+    <h2>2. 认证</h2>
+    <div class="row">
+      <div class="form-group"><label>用户名</label><input id="reg-user" placeholder="zhangsan"></div>
+      <div class="form-group"><label>邮箱</label><input id="reg-email" placeholder="a@x.com"></div>
+    </div>
+    <div class="row">
+      <div class="form-group"><label>密码</label><input id="reg-pass" type="password" value="testPass123"></div>
+    </div>
+    <div class="row">
+      <button class="btn btn-primary btn-block" onclick="register()">注册</button>
+      <button class="btn btn-primary btn-block" onclick="login()">登录</button>
+    </div>
+    <div class="token-box"><span class="token" id="token-display">未登录</span></div>
+
+    <h2>3. 知识库 & 文档</h2>
+    <div class="row">
+      <div class="form-group"><label>KB 名称</label><input id="kb-name" value="测试知识库"></div>
+      <div class="form-group"><label>可见性</label><select id="kb-vis"><option value="team">team</option><option value="private">private</option><option value="public">public</option></select></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="createKB()">创建知识库</button>
+    <div class="form-group"><label>选择知识库</label><select id="kb-select"><option>-- 先创建或刷新 --</option></select></div>
+    <button class="btn btn-sm btn-primary" onclick="listKBs()">刷新列表</button>
+    <div class="form-group"><label>上传文档</label><input id="file-input" type="file" accept=".pdf,.docx,.md,.txt,.csv,.xlsx"></div>
+    <button class="btn btn-success btn-block" onclick="uploadDoc()">上传文档</button>
+
+    <h2>4. 快速操作</h2>
+    <button class="btn btn-sm btn-primary" onclick="autoSetup()" style="margin-bottom:4px">一键初始化 (注册+KB+上传示例)</button>
+  </div>
+
+  <!-- 右侧测试面板 -->
+  <div class="panel" style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <h2>RAG 问答 (同步)</h2>
+        <div class="form-group"><label>问题</label><input id="chat-query" value="请介绍一下 Python？"></div>
+        <button class="btn btn-primary btn-block" onclick="chatSync()">发送</button>
+        <div id="chat-messages"></div>
+      </div>
+      <div>
+        <h2>WebSocket 流式</h2>
+        <div class="form-group"><label>问题</label><input id="ws-query" value="什么是 FastAPI？"></div>
+        <button class="btn btn-success btn-block" id="ws-btn" onclick="chatStream()">开始流式问答</button>
+        <button class="btn btn-danger btn-sm btn-block" onclick="cancelStream()" style="margin-top:4px">取消</button>
+        <div id="stream-output"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <h2>Agent 工作流</h2>
+        <div class="form-group"><label>问题</label><input id="agent-query" value="分析知识库中的 Python 相关内容"></div>
+        <button class="btn btn-primary btn-block" onclick="agentChat()">执行 Agent</button>
+        <div class="result-box" id="agent-result"></div>
+      </div>
+      <div>
+        <h2>MCP 工具</h2>
+        <button class="btn btn-sm btn-primary" onclick="listMCPServers()">列出 MCP Servers</button>
+        <button class="btn btn-sm btn-primary" onclick="listMCPTools()">列出 MCP 工具</button>
+        <div class="result-box" id="mcp-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let token = '';
+let currentKB = '';
+let ws = null;
+
+function api(path, opts={}) {
+  const base = $('api-base').value;
+  const headers = {...opts.headers, 'Content-Type':'application/json'};
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  return fetch(base + path, {...opts, headers}).then(r => r.json().then(d => ({status:r.status, data:d})));
+}
+
+async function checkHealth() {
+  const base = $('api-base').value;
+  try {
+    const r = await fetch(base + '/api/health');
+    const d = await r.json();
+    $('api-status').textContent = '已连接 v' + d.version;
+    $('api-status').className = 'status online';
+  } catch(e) {
+    $('api-status').textContent = '无法连接';
+    $('api-status').className = 'status offline';
+  }
+}
+
+async function register() {
+  const r = await api('/api/auth/register', {
+    method:'POST',
+    body:JSON.stringify({username:$('reg-user').value,email:$('reg-email').value,password:$('reg-pass').value})
+  });
+  if (r.data.access_token) { token = r.data.access_token; $('token-display').textContent = 'Token: ' + token.slice(0,30) + '...'; }
+  logResult('chat-messages', r);
+}
+
+async function login() {
+  const r = await api('/api/auth/login', {
+    method:'POST',
+    body:JSON.stringify({username:$('reg-user').value,password:$('reg-pass').value})
+  });
+  if (r.data.access_token) { token = r.data.access_token; $('token-display').textContent = 'Token: ' + token.slice(0,30) + '...'; }
+  logResult('chat-messages', r);
+}
+
+async function createKB() {
+  const r = await api('/api/kbs', {
+    method:'POST',
+    body:JSON.stringify({name:$('kb-name').value,visibility:$('kb-vis').value})
+  });
+  if (r.status === 201) currentKB = r.data.id;
+  logResult('chat-messages', r);
+  listKBs();
+}
+
+async function listKBs() {
+  const r = await api('/api/kbs');
+  const sel = $('kb-select');
+  sel.innerHTML = '';
+  if (r.data && Array.isArray(r.data)) {
+    r.data.forEach(kb => {
+      const opt = document.createElement('option');
+      opt.value = kb.id;
+      opt.textContent = kb.name + ' (' + kb.document_count + ' docs)';
+      sel.appendChild(opt);
+    });
+    if (r.data.length > 0) currentKB = r.data[0].id;
+  }
+}
+
+async function uploadDoc() {
+  const file = $('file-input').files[0];
+  if (!file || !currentKB) { alert('请先选择文件和知识库'); return; }
+  const form = new FormData();
+  form.append('file', file);
+  const r = await fetch($('api-base').value + '/api/kbs/' + currentKB + '/documents/upload', {
+    method:'POST', headers: token ? {'Authorization':'Bearer '+token} : {}, body: form
+  }).then(r => r.json());
+  logResult('chat-messages', {status:'uploaded', data:r});
+  listKBs();
+}
+
+async function chatSync() {
+  if (!currentKB) { alert('请先创建知识库'); return; }
+  const r = await api('/api/chat', {
+    method:'POST',
+    body:JSON.stringify({query:$('chat-query').value,kb_id:currentKB})
+  });
+  const msgs = $('chat-messages');
+  msgs.innerHTML += `<div class="msg user">Q: ${$('chat-query').value}</div>`;
+  msgs.innerHTML += `<div class="msg assistant">A: ${r.data.answer||JSON.stringify(r.data)}</div>`;
+  if (r.data.citations) {
+    msgs.innerHTML += `<div class="msg system">Citations: ${r.data.citations.length} sources</div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function chatStream() {
+  if (!currentKB) { alert('请先创建知识库'); return; }
+  const proto = $('api-base').value.startsWith('https') ? 'wss' : 'ws';
+  const wsUrl = $('api-base').value.replace(/^https?/, proto) + '/api/chat/stream';
+  ws = new WebSocket(wsUrl);
+  const out = $('stream-output');
+  out.innerHTML = '';
+  $('ws-btn').disabled = true;
+
+  ws.onopen = () => {
+    out.innerHTML += `<div class="event"><span class="ev-label ev-info">CONNECT</span>已连接</div>\n`;
+    ws.send(JSON.stringify({query:$('ws-query').value, kb_id:currentKB}));
+  };
+  ws.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+    let cls = 'ev-info';
+    if (d.event === 'answer_delta') cls = 'ev-answer';
+    else if (d.event.includes('tool')) cls = 'ev-tool';
+    else if (d.event === 'citation') cls = 'ev-citation';
+    else if (d.event === 'done') { cls = 'ev-done'; $('ws-btn').disabled = false; }
+    else if (d.event === 'error') cls = 'ev-error';
+    const dataStr = typeof d.data === 'string' ? d.data : JSON.stringify(d.data).slice(0,200);
+    out.innerHTML += `<div class="event"><span class="ev-label ${cls}">${d.event}</span>${dataStr}</div>\n`;
+    out.scrollTop = out.scrollHeight;
+  };
+  ws.onclose = () => { $('ws-btn').disabled = false; };
+  ws.onerror = () => { out.innerHTML += `<div class="event"><span class="ev-label ev-error">ERROR</span>连接失败</div>\n`; $('ws-btn').disabled = false; };
+}
+
+function cancelStream() { if (ws) { ws.send(JSON.stringify({action:'cancel'})); $('ws-btn').disabled = false; } }
+
+async function agentChat() {
+  if (!currentKB) { alert('请先创建知识库'); return; }
+  const r = await api('/api/agent/chat', {
+    method:'POST',
+    body:JSON.stringify({query:$('agent-query').value,kb_id:currentKB,enable_verifier:true})
+  });
+  $('agent-result').textContent = JSON.stringify(r.data, null, 2);
+}
+
+async function listMCPServers() {
+  const r = await api('/api/mcp/servers');
+  $('mcp-result').textContent = JSON.stringify(r.data, null, 2);
+}
+
+async function listMCPTools() {
+  const r = await api('/api/mcp/tools');
+  $('mcp-result').textContent = JSON.stringify(r.data, null, 2);
+}
+
+async function autoSetup() {
+  // 一键：注册 → 创建 KB → 上传示例文档
+  $('reg-user').value = 'demo';
+  $('reg-email').value = 'demo@example.com';
+  await register();
+  if (!token) { await login(); }
+  $('kb-name').value = 'Demo知识库';
+  await createKB();
+  await listKBs();
+  // 创建示例 txt 文件并上传
+  const content = 'Python 是一种高级编程语言，广泛用于数据科学、机器学习、Web 开发等领域。\n\nFastAPI 是一个现代 Python Web 框架，支持异步处理、自动 API 文档生成和类型校验。\n\nRAG（检索增强生成）技术结合了信息检索和文本生成，可以有效减少大语言模型的幻觉问题。';
+  const blob = new Blob([content], {type:'text/plain'});
+  const file = new File([blob], 'demo.txt', {type:'text/plain'});
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  $('file-input').files = dt.files;
+  await uploadDoc();
+  logResult('chat-messages', {status:'ok', data:'一键初始化完成！知识库和示例文档已就绪。'});
+}
+
+function logResult(id, r) {
+  const el = $(id);
+  el.innerHTML += `<div class="msg system">[${r.status}] ${JSON.stringify(r.data).slice(0,300)}</div>\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+checkHealth();
+</script>
+</body>
+</html>

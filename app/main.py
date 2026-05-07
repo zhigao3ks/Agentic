@@ -3,6 +3,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.exceptions import AppException
@@ -53,6 +54,12 @@ app.include_router(chat_router)
 app.include_router(agent_router)
 app.include_router(mcp_router)
 app.include_router(ws_router)
+
+# 静态文件 (前端联调页面) → 访问 http://localhost:8000/app
+import os
+_static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+if os.path.isdir(_static_dir):
+    app.mount("/app", StaticFiles(directory=_static_dir, html=True), name="static")
 
 
 @app.get("/api/health")
