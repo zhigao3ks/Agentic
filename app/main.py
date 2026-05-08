@@ -34,6 +34,14 @@ async def _startup():
     await init_db()
     logger.info("database tables initialized")
 
+    # 注册 MCP Server 到内存注册表
+    from app.mcp_client.registry import registry
+    registry.register("knowledge-base-mcp", "stdio",
+                      "python -m app.mcp_servers.knowledge_base.server", timeout=30)
+    registry.register("sql-query-mcp", "stdio",
+                      "python -m app.mcp_servers.sql_query.server", timeout=30)
+    logger.info("mcp servers registered")
+
 
 @app.exception_handler(AppException)
 async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:
