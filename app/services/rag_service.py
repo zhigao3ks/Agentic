@@ -48,7 +48,7 @@ async def ask(
     context = context_builder.build_context(enriched)
 
     # 4. LLM 生成
-    llm_svc = llm or FakeLLM()
+    llm_svc = llm or dependencies.get_llm_service()
     prompt = f"上下文信息：\n\n{context}\n\n用户问题：{query}\n\n请基于以上上下文回答问题，并标注引用编号。"
     answer = await llm_svc.generate(prompt, system_prompt=RAG_SYSTEM_PROMPT)
 
@@ -96,13 +96,3 @@ async def _enrich_chunks(db: AsyncSession, results: list[dict]) -> list[dict]:
     return enriched
 
 
-class FakeLLM(LLMService):
-    """内部 Fake LLM，用于 RAG 服务未提供 LLM 时的 fallback。"""
-    async def generate(self, prompt: str, system_prompt: str = "", temperature: float = 0.7) -> str:
-        from app.services.llm.fake import FakeLLMService
-        return await FakeLLMService().generate(prompt, system_prompt, temperature)
-
-    async def generate_stream(self, prompt: str, system_prompt: str = "", temperature: float = 0.7):
-        from app.services.llm.fake import FakeLLMService
-        async for c in FakeLLMService().generate_stream(prompt, system_prompt, temperature):
-            yield c

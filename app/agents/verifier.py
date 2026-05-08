@@ -31,8 +31,8 @@ async def verify(
 ) -> dict:
     """验证回答质量，返回验证结果。"""
     if llm is None:
-        from app.services.llm.fake import FakeLLMService
-        llm = FakeLLMService()
+        from app.services.dependencies import get_llm_service
+        llm = get_llm_service()
 
     answer = state.get("answer", "")
     chunks = state.get("retrieved_chunks", [])

@@ -29,8 +29,8 @@ PLAN_PROMPT = """你是一个工具规划助手。根据用户问题分析结果
 async def plan_tools(state: AgentState, llm: LLMService | None = None) -> dict:
     """分析问题并规划工具调用。"""
     if llm is None:
-        from app.services.llm.fake import FakeLLMService
-        llm = FakeLLMService()
+        from app.services.dependencies import get_llm_service
+        llm = get_llm_service()
 
     analysis = state.get("query_analysis", {})
     if not analysis.get("needs_tools"):

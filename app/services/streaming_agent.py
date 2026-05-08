@@ -106,8 +106,4 @@ def _build_prompt(context: str, query: str) -> str:
 
 
 def _get_llm() -> LLMService:
-    if dependencies.get_embedding_service():  # dev mode detection
-        from app.services.llm.fake import FakeLLMService
-        return FakeLLMService()
-    from app.services.llm.openai_llm import OpenAILLMService
-    return OpenAILLMService()
+    return dependencies.get_llm_service()

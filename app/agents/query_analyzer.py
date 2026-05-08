@@ -21,8 +21,8 @@ ANALYZE_PROMPT = """分析以下用户问题，返回 JSON 格式的分析结果
 async def analyze_query(state: AgentState, llm: LLMService | None = None) -> dict:
     """分析用户问题，返回状态更新。"""
     if llm is None:
-        from app.services.llm.fake import FakeLLMService
-        llm = FakeLLMService()
+        from app.services.dependencies import get_llm_service
+        llm = get_llm_service()
 
     import json
 

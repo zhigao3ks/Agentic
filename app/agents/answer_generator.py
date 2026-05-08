@@ -24,8 +24,8 @@ async def generate_answer(
 ) -> dict:
     """生成回答并提取引用。"""
     if llm is None:
-        from app.services.llm.fake import FakeLLMService
-        llm = FakeLLMService()
+        from app.services.dependencies import get_llm_service
+        llm = get_llm_service()
 
     chunks = state.get("retrieved_chunks", [])
 
