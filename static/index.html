@@ -3,297 +3,635 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MCP-Agentic RAG — 联调测试面板</title>
+<title>MCP-Agentic RAG — 控制台</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
-.header{background:#1e293b;padding:16px 24px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
-.header h1{font-size:18px;color:#38bdf8}
-.header .status{font-size:12px;padding:4px 12px;border-radius:12px}
-.status.online{background:#065f46;color:#6ee7b7}
-.status.offline{background:#7f1d1d;color:#fca5a5}
-.container{display:grid;grid-template-columns:380px 1fr;gap:16px;padding:16px;height:calc(100vh - 57px)}
-.panel{background:#1e293b;border-radius:8px;border:1px solid #334155;padding:16px;overflow-y:auto}
-.panel h2{font-size:14px;color:#94a3b8;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #334155}
-.form-group{margin-bottom:10px}
-.form-group label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 10px;background:#0f172a;border:1px solid #334155;border-radius:4px;color:#e2e8f0;font-size:13px}
-.form-group textarea{min-height:80px;resize:vertical}
-.btn{display:inline-block;padding:8px 16px;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:500}
-.btn-primary{background:#1d4ed8;color:#fff}.btn-primary:hover{background:#1e40af}
-.btn-success{background:#065f46;color:#6ee7b7}.btn-success:hover{background:#064e3b}
-.btn-danger{background:#991b1b;color:#fca5a5}.btn-danger:hover{background:#7f1d1d}
-.btn-sm{padding:4px 10px;font-size:12px}
-.btn-block{display:block;width:100%;margin-top:4px}
-.token{color:#38bdf8;font-size:12px;word-break:break-all}
-.token-box{background:#0f172a;border:1px solid #334155;border-radius:4px;padding:8px;margin:2px 0}
-.row{display:flex;gap:8px}.row>*{flex:1}
-#chat-messages{height:300px;overflow-y:auto;margin-bottom:8px}
-#chat-messages .msg{margin-bottom:8px;padding:8px;border-radius:4px;font-size:13px;line-height:1.5}
-.msg.user{background:#1e3a5f}.msg.assistant{background:#0f172a;border:1px solid #334155}
-.msg.system{background:#1a2e1a;color:#6ee7b7;font-size:11px}
-#stream-output{height:300px;overflow-y:auto;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:12px;font-size:12px;font-family:monospace;line-height:1.6}
-#stream-output .event{margin-bottom:4px}
-.ev-label{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;margin-right:6px}
-.ev-answer{background:#065f46;color:#6ee7b7}.ev-tool{background:#1d4ed8;color:#93c5fd}
-.ev-citation{background:#92400e;color:#fcd34d}.ev-done{background:#4c1d95;color:#c4b5fd}
-.ev-error{background:#991b1b;color:#fca5a5}.ev-info{background:#334155;color:#94a3b8}
-.result-box{background:#0f172a;border:1px solid #334155;border-radius:4px;padding:8px;max-height:200px;overflow-y:auto;font-size:12px;white-space:pre-wrap;margin-top:4px}
-pre{font-size:11px;line-height:1.4}
+/* ===== Reset & Variables ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#0a0f1e; --bg-secondary:#111827; --bg-tertiary:#1a2332; --bg-card:#151d2e;
+  --border:#1e2d45; --border-light:#253652;
+  --text-primary:#e8edf5; --text-secondary:#8b9cc0; --text-muted:#54678f;
+  --accent:#3b82f6; --accent-hover:#2563eb; --accent-glow:rgba(59,130,246,0.15);
+  --success:#10b981; --success-bg:rgba(16,185,129,0.1);
+  --warning:#f59e0b; --warning-bg:rgba(245,158,11,0.1);
+  --danger:#ef4444; --danger-bg:rgba(239,68,68,0.1);
+  --info:#6366f1; --info-bg:rgba(99,102,241,0.1);
+  --radius:10px; --radius-sm:6px; --radius-lg:14px;
+  --shadow:0 4px 24px rgba(0,0,0,0.3); --shadow-lg:0 8px 40px rgba(0,0,0,0.5);
+  --transition:0.2s cubic-bezier(0.4,0,0.2,1);
+}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;display:flex;overflow:hidden}
+/* ===== Sidebar ===== */
+.sidebar{width:240px;background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;z-index:10}
+.sidebar-logo{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar-logo .icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--info));border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:18px}
+.sidebar-logo h2{font-size:15px;font-weight:700;letter-spacing:-0.3px;line-height:1.3}
+.sidebar-logo h2 span{display:block;font-size:10px;color:var(--text-muted);font-weight:400;letter-spacing:0.5px;text-transform:uppercase}
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);color:var(--text-secondary);cursor:pointer;transition:var(--transition);font-size:13px;font-weight:500;margin-bottom:2px;user-select:none}
+.nav-item:hover{background:var(--bg-tertiary);color:var(--text-primary)}
+.nav-item.active{background:var(--accent-glow);color:var(--accent)}
+.nav-item .badge{font-size:10px;padding:2px 6px;border-radius:10px;background:var(--accent);color:#fff;margin-left:auto}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:8px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ===== Main ===== */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg-secondary)}
+.topbar h1{font-size:16px;font-weight:600}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.btn{padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:var(--transition);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-hover);box-shadow:0 0 20px var(--accent-glow)}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{filter:brightness(1.1)}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{filter:brightness(1.1)}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border)}.btn-ghost:hover{background:var(--bg-tertiary);color:var(--text-primary)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:4px}
+.content{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:20px}
+.page{display:none}.page.active{display:flex;flex-direction:column;gap:20px}
+
+/* ===== Cards ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:var(--transition)}
+.stat-card:hover{border-color:var(--border-light);box-shadow:var(--shadow)}
+.stat-card .label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.stat-card .value{font-size:28px;font-weight:700;letter-spacing:-1px}
+.stat-card .sub{font-size:12px;color:var(--text-secondary);margin-top:4px}
+.stat-card.accent .value{color:var(--accent)}.stat-card.success .value{color:var(--success)}
+.stat-card.warning .value{color:var(--warning)}.stat-card.info .value{color:var(--info)}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600}
+.card-body{padding:16px 18px}
+
+/* ===== Chat ===== */
+.chat-layout{display:grid;grid-template-columns:1fr 380px;gap:16px;flex:1;min-height:0}
+.chat-main{display:flex;flex-direction:column;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chat-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.chat-header .kb-select{background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:var(--radius-sm);font-size:12px;min-width:180px}
+.chat-messages{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:85%;padding:12px 16px;border-radius:var(--radius);font-size:13px;line-height:1.6;animation:msgIn 0.3s ease}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,var(--accent),#4f46e5);color:#fff;border-bottom-right-radius:4px}
+.msg.assistant{align-self:flex-start;background:var(--bg-tertiary);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg .meta{font-size:10px;opacity:0.7;margin-bottom:4px}
+.msg .cite{display:inline-block;background:var(--warning-bg);color:var(--warning);font-size:10px;padding:2px 6px;border-radius:4px;margin:2px;cursor:pointer}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.chat-input{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end}
+.chat-input textarea{flex:1;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:10px 14px;font-size:13px;resize:none;min-height:44px;max-height:120px;font-family:inherit;line-height:1.5}
+.chat-input textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.chat-input .actions{display:flex;gap:6px}
+
+/* ===== Stream Panel ===== */
+.stream-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden}
+.stream-events{flex:1;overflow-y:auto;padding:12px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:11px;line-height:1.7}
+.stream-event{display:flex;gap:8px;padding:3px 0;align-items:flex-start;animation:slideIn 0.2s ease}
+.stream-event .time{color:var(--text-muted);flex-shrink:0;width:50px}
+.stream-event .badge{flex-shrink:0;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.badge-answer{background:var(--success-bg);color:var(--success)}.badge-tool{background:var(--info-bg);color:var(--info)}
+.badge-citation{background:var(--warning-bg);color:var(--warning)}.badge-done{background:var(--accent-glow);color:var(--accent)}
+.badge-error{background:var(--danger-bg);color:var(--danger)}.badge-info{background:var(--bg-tertiary);color:var(--text-secondary)}
+.answer-stream{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;min-height:80px;max-height:200px;overflow-y:auto;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+
+/* ===== Forms ===== */
+.input,.select{width:100%;padding:9px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:inherit;transition:var(--transition)}
+.input:focus,.select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2354678f' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+.form-group{margin-bottom:12px}.form-group label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:5px;font-weight:500}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-inline{display:flex;gap:8px;align-items:flex-end}
+
+/* ===== Table ===== */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);background:var(--bg-tertiary)}
+td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
+tr:hover td{background:var(--bg-tertiary);color:var(--text-primary)}
+.status-tag{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.tag-ready{background:var(--success-bg);color:var(--success)}.tag-error{background:var(--danger-bg);color:var(--danger)}
+.tag-processing{background:var(--warning-bg);color:var(--warning)}
+
+/* ===== Tabs ===== */
+.tabs{display:flex;gap:2px;background:var(--bg-tertiary);border-radius:var(--radius);padding:3px;width:fit-content}
+.tab{padding:7px 16px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;cursor:pointer;color:var(--text-secondary);transition:var(--transition);user-select:none}
+.tab.active{background:var(--bg-card);color:var(--text-primary);box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.tab:hover:not(.active){color:var(--text-primary)}
+
+/* ===== Tool Cards ===== */
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.tool-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:var(--transition)}
+.tool-card:hover{border-color:var(--border-light);box-shadow:var(--shadow)}
+.tool-card .tool-name{font-size:14px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.tool-card .tool-desc{font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.5}
+.tool-card .tool-server{font-size:10px;color:var(--info);text-transform:uppercase;letter-spacing:0.5px}
+.tool-card .perm-badge{padding:2px 8px;border-radius:8px;font-size:10px;font-weight:500}
+.perm-public{background:var(--success-bg);color:var(--success)}
+.perm-user{background:var(--info-bg);color:var(--info)}
+.perm-admin{background:var(--danger-bg);color:var(--danger)}
+
+/* ===== Misc ===== */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
+.empty-state .icon{font-size:40px;margin-bottom:12px;opacity:0.3}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s ease}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:480px;max-width:90vw;box-shadow:var(--shadow-lg);animation:scaleIn 0.2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+.token-bar{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;font-family:monospace;font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.citation-popup{position:fixed;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;font-size:12px;box-shadow:var(--shadow-lg);z-index:50;max-width:320px;line-height:1.5;pointer-events:none}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+@media(max-width:1024px){.stats-grid{grid-template-columns:repeat(2,1fr)}.chat-layout{grid-template-columns:1fr}}
+@media(max-width:640px){.sidebar{display:none}.stats-grid{grid-template-columns:1fr}.chat-layout{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>&#9881; MCP-Agentic RAG — 联调测试面板</h1>
-  <span id="api-status" class="status offline">未连接</span>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">⚡</div>
+    <h2>MCP-Agentic<span>RAG Console</span></h2>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" data-page="dashboard"><span>📊</span> 仪表盘</div>
+    <div class="nav-item" data-page="chat"><span>💬</span> 智能问答 <span class="badge">RAG</span></div>
+    <div class="nav-item" data-page="knowledge"><span>📚</span> 知识库管理</div>
+    <div class="nav-item" data-page="agent"><span>🤖</span> Agent 工作流</div>
+    <div class="nav-item" data-page="mcp"><span>🔧</span> MCP 工具</div>
+    <div class="nav-item" data-page="settings"><span>⚙️</span> 设置</div>
+  </nav>
+  <div class="sidebar-footer">
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-text">检测中...</span>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main">
+  <header class="topbar">
+    <h1 id="page-title">📊 仪表盘</h1>
+    <div class="topbar-actions">
+      <span class="token-bar" id="token-bar">🔑 未登录 — 请先注册或登录</span>
+      <button class="btn btn-ghost btn-sm" onclick="showAuthModal()">🔐 认证</button>
+    </div>
+  </header>
+
+  <div class="content" id="content">
+
+    <!-- ===== Dashboard Page ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card accent"><div class="label">知识库</div><div class="value" id="stat-kbs">-</div><div class="sub">个知识库</div></div>
+        <div class="stat-card success"><div class="label">文档</div><div class="value" id="stat-docs">-</div><div class="sub">个文档已入库</div></div>
+        <div class="stat-card info"><div class="label">Chunks</div><div class="value" id="stat-chunks">-</div><div class="sub">个切片已索引</div></div>
+        <div class="stat-card warning"><div class="label">API 版本</div><div class="value" id="stat-version">-</div><div class="sub" id="stat-env">等待连接</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">📋 最近文档</div>
+        <div class="card-body"><div class="empty-state"><div class="icon">📭</div>请先创建知识库并上传文档</div></div>
+      </div>
+    </div>
+
+    <!-- ===== Chat Page ===== -->
+    <div class="page" id="page-chat">
+      <div class="chat-layout">
+        <div class="chat-main">
+          <div class="chat-header">
+            <select class="kb-select" id="chat-kb-select"><option value="">-- 选择知识库 --</option></select>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-xs" onclick="toggleStream()" id="toggle-stream-btn">📡 流式输出</button>
+            </div>
+          </div>
+          <div class="chat-messages" id="chat-messages">
+            <div class="empty-state"><div class="icon">💬</div>选择一个知识库，开始问答</div>
+          </div>
+          <div class="chat-input">
+            <textarea id="chat-input" placeholder="输入问题，按 Enter 发送，Shift+Enter 换行..." rows="1" onkeydown="handleChatKey(event)"></textarea>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="sendChat()" id="chat-send-btn">发送</button>
+            </div>
+          </div>
+        </div>
+        <div class="stream-panel" id="stream-panel">
+          <div class="card-header">🔴 实时事件流</div>
+          <div class="stream-events" id="stream-events">
+            <div style="color:var(--text-muted);text-align:center;padding:20px">等待消息...</div>
+          </div>
+          <div style="padding:10px 12px;border-top:1px solid var(--border)">
+            <div class="answer-stream" id="answer-stream" style="color:var(--text-muted)">流式回答将在此实时显示...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Knowledge Page ===== -->
+    <div class="page" id="page-knowledge">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="showCreateKBModal()">+ 新建知识库</button>
+        <select class="select" id="kb-filter" style="width:200px" onchange="loadDocuments()"><option value="">-- 选择知识库 --</option></select>
+        <button class="btn btn-success btn-sm" onclick="triggerUpload()">📤 上传文档</button>
+        <input type="file" id="file-upload" style="display:none" accept=".pdf,.docx,.md,.txt,.csv,.xlsx" onchange="uploadDocument()">
+      </div>
+      <div class="card" style="flex:1">
+        <div class="card-header">📄 文档列表 <span style="color:var(--text-muted);font-weight:400;margin-left:8px" id="doc-count"></span></div>
+        <div class="table-wrap"><table><thead><tr><th>文件名</th><th>类型</th><th>大小</th><th>Chunks</th><th>状态</th><th>上传时间</th><th>操作</th></tr></thead>
+        <tbody id="doc-table-body"><tr><td colspan="7"><div class="empty-state">请选择知识库查看文档</div></td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ===== Agent Page ===== -->
+    <div class="page" id="page-agent">
+      <div class="form-row">
+        <div class="form-group"><label>知识库</label><select class="select" id="agent-kb-select"><option value="">-- 选择知识库 --</option></select></div>
+        <div class="form-group"><label>Verifier</label><select class="select" id="agent-verifier"><option value="true">启用</option><option value="false">禁用</option></select></div>
+      </div>
+      <div class="form-group"><label>问题描述</label><textarea class="input" id="agent-query" style="min-height:60px" placeholder="输入复杂分析问题，Agent 将自动规划工具并执行..."></textarea></div>
+      <button class="btn btn-primary" onclick="runAgent()" id="agent-run-btn">🤖 执行 Agent 工作流</button>
+      <div class="card" style="flex:1">
+        <div class="card-header">📋 执行结果 <span style="color:var(--text-muted);font-weight:400;margin-left:8px" id="agent-latency"></span></div>
+        <div class="card-body"><div class="answer-stream" id="agent-answer" style="color:var(--text-muted);min-height:100px">等待执行...</div></div>
+      </div>
+      <div class="card" style="max-height:300px;overflow-y:auto">
+        <div class="card-header">📜 工作流步骤</div>
+        <div class="card-body"><pre id="agent-steps" style="font-size:11px;color:var(--text-muted);white-space:pre-wrap">等待...</pre></div>
+      </div>
+    </div>
+
+    <!-- ===== MCP Page ===== -->
+    <div class="page" id="page-mcp">
+      <div class="tabs" id="mcp-tabs">
+        <div class="tab active" data-mcp="servers">MCP Servers</div>
+        <div class="tab" data-mcp="tools">工具列表</div>
+        <div class="tab" data-mcp="call">调用工具</div>
+      </div>
+      <div id="mcp-servers"><div class="card"><div class="table-wrap"><table><thead><tr><th>名称</th><th>传输</th><th>端点</th><th>状态</th></tr></thead><tbody id="mcp-server-tbody"></tbody></table></div></div></div>
+      <div id="mcp-tools" style="display:none"><div class="tools-grid" id="mcp-tools-grid"></div></div>
+      <div id="mcp-call" style="display:none">
+        <div class="form-row">
+          <div class="form-group"><label>Server</label><input class="input" id="mcp-call-server" placeholder="knowledge-base-mcp"></div>
+          <div class="form-group"><label>工具名</label><input class="input" id="mcp-call-tool" placeholder="search_knowledge_base"></div>
+        </div>
+        <div class="form-group"><label>参数 (JSON)</label><textarea class="input" id="mcp-call-args" style="min-height:80px;font-family:monospace">{"query":"test","kb_id":"your-kb-id"}</textarea></div>
+        <button class="btn btn-primary" onclick="callMCPTool()">执行调用</button>
+        <div class="answer-stream" id="mcp-call-result" style="margin-top:12px;color:var(--text-muted);min-height:40px"></div>
+      </div>
+    </div>
+
+    <!-- ===== Settings Page ===== -->
+    <div class="page" id="page-settings">
+      <div class="card" style="max-width:600px">
+        <div class="card-header">🔗 服务配置</div>
+        <div class="card-body">
+          <div class="form-group"><label>API 地址</label><input class="input" id="settings-api-base" value="http://localhost:8000"></div>
+          <div class="form-group"><label>Token</label><input class="input" id="settings-token" placeholder="自动填充登录后的 Token..."></div>
+          <button class="btn btn-primary" onclick="saveSettings()">保存并重连</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="auth-modal" style="display:none" onclick="if(event.target===this)hideAuthModal()">
+  <div class="modal">
+    <div class="tabs" style="margin-bottom:16px" id="auth-tabs">
+      <div class="tab active" data-auth="login">登录</div>
+      <div class="tab" data-auth="register">注册</div>
+    </div>
+    <div id="auth-login">
+      <div class="form-group"><label>用户名</label><input class="input" id="login-user" placeholder="zhangsan"></div>
+      <div class="form-group"><label>密码</label><input class="input" id="login-pass" type="password" placeholder="••••••••"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="doLogin()">登录</button>
+    </div>
+    <div id="auth-register" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label>用户名</label><input class="input" id="reg-user" placeholder="zhangsan"></div>
+        <div class="form-group"><label>邮箱</label><input class="input" id="reg-email" placeholder="a@example.com"></div>
+      </div>
+      <div class="form-group"><label>密码</label><input class="input" id="reg-pass" type="password" value="testPass123"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="doRegister()">注册</button>
+    </div>
+  </div>
 </div>
 
-<div class="container">
-  <!-- 左侧配置面板 -->
-  <div class="panel" style="display:flex;flex-direction:column;gap:8px">
-    <h2>1. 服务配置</h2>
-    <div class="form-group">
-      <label>API 地址</label>
-      <input id="api-base" value="http://localhost:8000" placeholder="http://localhost:8000">
-    </div>
-    <button class="btn btn-primary btn-block" onclick="checkHealth()">检测服务</button>
-
-    <h2>2. 认证</h2>
-    <div class="row">
-      <div class="form-group"><label>用户名</label><input id="reg-user" placeholder="zhangsan"></div>
-      <div class="form-group"><label>邮箱</label><input id="reg-email" placeholder="a@x.com"></div>
-    </div>
-    <div class="row">
-      <div class="form-group"><label>密码</label><input id="reg-pass" type="password" value="testPass123"></div>
-    </div>
-    <div class="row">
-      <button class="btn btn-primary btn-block" onclick="register()">注册</button>
-      <button class="btn btn-primary btn-block" onclick="login()">登录</button>
-    </div>
-    <div class="token-box"><span class="token" id="token-display">未登录</span></div>
-
-    <h2>3. 知识库 & 文档</h2>
-    <div class="row">
-      <div class="form-group"><label>KB 名称</label><input id="kb-name" value="测试知识库"></div>
-      <div class="form-group"><label>可见性</label><select id="kb-vis"><option value="team">team</option><option value="private">private</option><option value="public">public</option></select></div>
-    </div>
-    <button class="btn btn-primary btn-block" onclick="createKB()">创建知识库</button>
-    <div class="form-group"><label>选择知识库</label><select id="kb-select"><option>-- 先创建或刷新 --</option></select></div>
-    <button class="btn btn-sm btn-primary" onclick="listKBs()">刷新列表</button>
-    <div class="form-group"><label>上传文档</label><input id="file-input" type="file" accept=".pdf,.docx,.md,.txt,.csv,.xlsx"></div>
-    <button class="btn btn-success btn-block" onclick="uploadDoc()">上传文档</button>
-
-    <h2>4. 快速操作</h2>
-    <button class="btn btn-sm btn-primary" onclick="autoSetup()" style="margin-bottom:4px">一键初始化 (注册+KB+上传示例)</button>
-  </div>
-
-  <!-- 右侧测试面板 -->
-  <div class="panel" style="display:flex;flex-direction:column;gap:8px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div>
-        <h2>RAG 问答 (同步)</h2>
-        <div class="form-group"><label>问题</label><input id="chat-query" value="请介绍一下 Python？"></div>
-        <button class="btn btn-primary btn-block" onclick="chatSync()">发送</button>
-        <div id="chat-messages"></div>
-      </div>
-      <div>
-        <h2>WebSocket 流式</h2>
-        <div class="form-group"><label>问题</label><input id="ws-query" value="什么是 FastAPI？"></div>
-        <button class="btn btn-success btn-block" id="ws-btn" onclick="chatStream()">开始流式问答</button>
-        <button class="btn btn-danger btn-sm btn-block" onclick="cancelStream()" style="margin-top:4px">取消</button>
-        <div id="stream-output"></div>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div>
-        <h2>Agent 工作流</h2>
-        <div class="form-group"><label>问题</label><input id="agent-query" value="分析知识库中的 Python 相关内容"></div>
-        <button class="btn btn-primary btn-block" onclick="agentChat()">执行 Agent</button>
-        <div class="result-box" id="agent-result"></div>
-      </div>
-      <div>
-        <h2>MCP 工具</h2>
-        <button class="btn btn-sm btn-primary" onclick="listMCPServers()">列出 MCP Servers</button>
-        <button class="btn btn-sm btn-primary" onclick="listMCPTools()">列出 MCP 工具</button>
-        <div class="result-box" id="mcp-result"></div>
-      </div>
-    </div>
+<!-- KB Create Modal -->
+<div class="modal-overlay" id="kb-modal" style="display:none" onclick="if(event.target===this)hideKBModal()">
+  <div class="modal">
+    <h3 style="margin-bottom:14px">📚 新建知识库</h3>
+    <div class="form-group"><label>名称</label><input class="input" id="kb-create-name" placeholder="输入知识库名称"></div>
+    <div class="form-group"><label>描述</label><textarea class="input" id="kb-create-desc" style="min-height:60px" placeholder="可选描述..."></textarea></div>
+    <div class="form-group"><label>可见性</label><select class="select" id="kb-create-vis"><option value="team">团队可见</option><option value="private">仅自己</option><option value="public">公开</option></select></div>
+    <button class="btn btn-primary" style="width:100%" onclick="doCreateKB()">创建</button>
   </div>
 </div>
 
 <script>
-const $ = id => document.getElementById(id);
-let token = '';
-let currentKB = '';
-let ws = null;
+/* ===== Global State ===== */
+const S = {token:'',kbList:[],currentKB:'',ws:null,streaming:false,streamAnswer:''};
 
-function api(path, opts={}) {
-  const base = $('api-base').value;
-  const headers = {...opts.headers, 'Content-Type':'application/json'};
-  if (token) headers['Authorization'] = 'Bearer ' + token;
-  return fetch(base + path, {...opts, headers}).then(r => r.json().then(d => ({status:r.status, data:d})));
+/* ===== API Helper ===== */
+async function api(path,opts={}){
+  const base=S.getSetting('apiBase','http://localhost:8000');
+  const h={...opts.headers,'Content-Type':'application/json'};
+  if(S.token)h['Authorization']='Bearer '+S.token;
+  const r=await fetch(base+path,{...opts,headers:h});
+  const text=await r.text();
+  try{return{status:r.status,data:JSON.parse(text)};}catch{return{status:r.status,data:{_raw:text}};}
 }
 
-async function checkHealth() {
-  const base = $('api-base').value;
-  try {
-    const r = await fetch(base + '/api/health');
-    const d = await r.json();
-    $('api-status').textContent = '已连接 v' + d.version;
-    $('api-status').className = 'status online';
-  } catch(e) {
-    $('api-status').textContent = '无法连接';
-    $('api-status').className = 'status offline';
+/* ===== Settings ===== */
+S.getSetting=function(k,d){try{return localStorage.getItem('rag_'+k)||d}catch{return d}};
+S.setSetting=function(k,v){try{localStorage.setItem('rag_'+k,v)}catch{}};
+
+function saveSettings(){
+  S.setSetting('apiBase',gid('settings-api-base').value);
+  updateStatus();
+}
+
+/* ===== Navigation ===== */
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+    el.classList.add('active');
+    const page=el.dataset.page;
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    const pg=gid('page-'+page);if(pg)pg.classList.add('active');
+    gid('page-title').textContent=el.textContent.replace(/\s+/,' ').trim();
+    if(page==='chat')refreshKBs();
+    if(page==='knowledge')refreshKBs().then(()=>loadDocuments());
+    if(page==='mcp')loadMCPServers();
+    if(page==='dashboard')loadDashboard();
+    if(page==='agent')refreshKBs();
+  });
+});
+
+// MCP Tabs
+document.querySelectorAll('#mcp-tabs .tab').forEach(el=>{
+  el.addEventListener('click',()=>{
+    document.querySelectorAll('#mcp-tabs .tab').forEach(e=>e.classList.remove('active'));
+    el.classList.add('active');
+    const t=el.dataset.mcp;
+    gid('mcp-servers').style.display=t==='servers'?'block':'none';
+    gid('mcp-tools').style.display=t==='tools'?'block':'none';
+    gid('mcp-call').style.display=t==='call'?'block':'none';
+    if(t==='tools')loadMCPTools();
+  });
+});
+
+// Auth Tabs
+document.querySelectorAll('#auth-tabs .tab').forEach(el=>{
+  el.addEventListener('click',()=>{
+    document.querySelectorAll('#auth-tabs .tab').forEach(e=>e.classList.remove('active'));
+    el.classList.add('active');
+    const t=el.dataset.auth;
+    gid('auth-login').style.display=t==='login'?'block':'none';
+    gid('auth-register').style.display=t==='register'?'block':'none';
+  });
+});
+
+/* ===== Shortcuts ===== */
+function gid(id){return document.getElementById(id);}
+
+/* ===== Status ===== */
+async function updateStatus(){
+  const r=await api('/api/health');
+  if(r.status===200){
+    gid('status-dot').style.background='var(--success)';
+    gid('status-text').textContent='v'+r.data.version+' · 运行中';
+    gid('stat-version').textContent='v'+r.data.version;
+    gid('stat-env').textContent='服务正常';
+  }else{
+    gid('status-dot').style.background='var(--danger)';
+    gid('status-text').textContent='无法连接';
   }
 }
 
-async function register() {
-  const r = await api('/api/auth/register', {
-    method:'POST',
-    body:JSON.stringify({username:$('reg-user').value,email:$('reg-email').value,password:$('reg-pass').value})
-  });
-  if (r.data.access_token) { token = r.data.access_token; $('token-display').textContent = 'Token: ' + token.slice(0,30) + '...'; }
-  logResult('chat-messages', r);
+/* ===== Auth ===== */
+function showAuthModal(){gid('auth-modal').style.display='flex';}
+function hideAuthModal(){gid('auth-modal').style.display='none';}
+
+async function doRegister(){
+  const r=await api('/api/auth/register',{method:'POST',body:JSON.stringify({
+    username:gid('reg-user').value,email:gid('reg-email').value,password:gid('reg-pass').value
+  })});
+  if(r.data.access_token){setToken(r.data.access_token);hideAuthModal();}
+  else alert('注册失败: '+JSON.stringify(r.data));
 }
 
-async function login() {
-  const r = await api('/api/auth/login', {
-    method:'POST',
-    body:JSON.stringify({username:$('reg-user').value,password:$('reg-pass').value})
-  });
-  if (r.data.access_token) { token = r.data.access_token; $('token-display').textContent = 'Token: ' + token.slice(0,30) + '...'; }
-  logResult('chat-messages', r);
+async function doLogin(){
+  const r=await api('/api/auth/login',{method:'POST',body:JSON.stringify({
+    username:gid('login-user').value,password:gid('login-pass').value
+  })});
+  if(r.data.access_token){setToken(r.data.access_token);hideAuthModal();}
+  else alert('登录失败: '+JSON.stringify(r.data));
 }
 
-async function createKB() {
-  const r = await api('/api/kbs', {
-    method:'POST',
-    body:JSON.stringify({name:$('kb-name').value,visibility:$('kb-vis').value})
-  });
-  if (r.status === 201) currentKB = r.data.id;
-  logResult('chat-messages', r);
-  listKBs();
+function setToken(tk){
+  S.token=tk;S.setSetting('token',tk);
+  gid('token-bar').textContent='🔑 '+tk.slice(0,36)+'...';
+  gid('settings-token').value=tk;
 }
 
-async function listKBs() {
-  const r = await api('/api/kbs');
-  const sel = $('kb-select');
-  sel.innerHTML = '';
-  if (r.data && Array.isArray(r.data)) {
-    r.data.forEach(kb => {
-      const opt = document.createElement('option');
-      opt.value = kb.id;
-      opt.textContent = kb.name + ' (' + kb.document_count + ' docs)';
-      sel.appendChild(opt);
+/* ===== KB Management ===== */
+async function refreshKBs(){
+  const r=await api('/api/kbs');
+  if(r.data&&Array.isArray(r.data)){
+    S.kbList=r.data;
+    ['chat-kb-select','kb-filter','agent-kb-select'].forEach(id=>{
+      const sel=gid(id);if(!sel)return;
+      sel.innerHTML='<option value="">-- 选择知识库 --</option>';
+      r.data.forEach(kb=>{sel.innerHTML+=`<option value="${kb.id}">${kb.name} (${kb.document_count||0} docs)</option>`;});
     });
-    if (r.data.length > 0) currentKB = r.data[0].id;
+    gid('stat-kbs').textContent=r.data.length;
   }
 }
 
-async function uploadDoc() {
-  const file = $('file-input').files[0];
-  if (!file || !currentKB) { alert('请先选择文件和知识库'); return; }
-  const form = new FormData();
-  form.append('file', file);
-  const r = await fetch($('api-base').value + '/api/kbs/' + currentKB + '/documents/upload', {
-    method:'POST', headers: token ? {'Authorization':'Bearer '+token} : {}, body: form
-  }).then(r => r.json());
-  logResult('chat-messages', {status:'uploaded', data:r});
-  listKBs();
+function showCreateKBModal(){gid('kb-modal').style.display='flex';}
+function hideKBModal(){gid('kb-modal').style.display='none';}
+
+async function doCreateKB(){
+  const r=await api('/api/kbs',{method:'POST',body:JSON.stringify({
+    name:gid('kb-create-name').value,visibility:gid('kb-create-vis').value,
+    description:gid('kb-create-desc').value
+  })});
+  if(r.status===201){S.currentKB=r.data.id;hideKBModal();refreshKBs();loadDocuments();}
+  else alert('创建失败: '+JSON.stringify(r.data));
 }
 
-async function chatSync() {
-  if (!currentKB) { alert('请先创建知识库'); return; }
-  const r = await api('/api/chat', {
-    method:'POST',
-    body:JSON.stringify({query:$('chat-query').value,kb_id:currentKB})
-  });
-  const msgs = $('chat-messages');
-  msgs.innerHTML += `<div class="msg user">Q: ${$('chat-query').value}</div>`;
-  msgs.innerHTML += `<div class="msg assistant">A: ${r.data.answer||JSON.stringify(r.data)}</div>`;
-  if (r.data.citations) {
-    msgs.innerHTML += `<div class="msg system">Citations: ${r.data.citations.length} sources</div>`;
+function triggerUpload(){gid('file-upload').click();}
+
+async function uploadDocument(){
+  const file=gid('file-upload').files[0];
+  const kb=gid('kb-filter').value;
+  if(!file||!kb){alert('请选择知识库和文件');return;}
+  const form=new FormData();form.append('file',file);
+  const base=S.getSetting('apiBase','http://localhost:8000');
+  const h=S.token?{'Authorization':'Bearer '+S.token}:{};
+  const r=await fetch(base+'/api/kbs/'+kb+'/documents/upload',{method:'POST',headers:h,body:form}).then(r=>r.json());
+  gid('file-upload').value='';
+  alert('上传完成！状态: '+r.status+(r.chunk_count?' · Chunks: '+r.chunk_count:''));
+  loadDocuments();refreshKBs();
+}
+
+async function loadDocuments(){
+  const kb=gid('kb-filter').value;if(!kb)return;
+  const r=await api('/api/kbs/'+kb+'/documents');
+  const tbody=gid('doc-table-body');
+  if(r.data&&r.data.items){
+    gid('doc-count').textContent='共 '+r.data.total+' 个文档';
+    gid('stat-docs').textContent=r.data.total;
+    tbody.innerHTML=r.data.items.map(d=>`<tr>
+      <td>📄 ${esc(d.filename)}</td><td>${d.file_type.toUpperCase()}</td>
+      <td>${fmtSize(d.file_size)}</td><td>${d.chunk_count}</td>
+      <td><span class="status-tag tag-${d.status==='ready'?'ready':d.status==='error'?'error':'processing'}">${d.status}</span></td>
+      <td>${fmtDate(d.created_at)}</td>
+      <td><button class="btn btn-danger btn-xs" onclick="deleteDoc('${d.id}')">删除</button></td>
+    </tr>`).join('');
+  }else tbody.innerHTML='<tr><td colspan="7"><div class="empty-state">暂无文档</div></td></tr>';
+}
+
+async function deleteDoc(id){if(confirm('确认删除此文档？')){await api('/api/documents/'+id,{method:'DELETE'});loadDocuments();refreshKBs();}}
+
+/* ===== Chat ===== */
+function handleChatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
+
+async function sendChat(){
+  const kb=gid('chat-kb-select').value;
+  const query=gid('chat-input').value.trim();
+  if(!kb||!query)return;
+  S.currentKB=kb;
+
+  const msgs=gid('chat-messages');
+  if(msgs.querySelector('.empty-state'))msgs.innerHTML='';
+  msgs.innerHTML+=`<div class="msg user"><div class="meta">你</div>${esc(query)}</div>`;
+  gid('chat-input').value='';msgs.scrollTop=msgs.scrollHeight;
+
+  if(S.streaming){await sendStreamChat(kb,query);return;}
+
+  const r=await api('/api/chat',{method:'POST',body:JSON.stringify({query,kb_id:kb})});
+  let answer=r.data.answer||JSON.stringify(r.data);
+  let cites='';
+  if(r.data.citations&&r.data.citations.length){
+    cites='<div style="margin-top:8px">'+r.data.citations.map(c=>
+      `<span class="cite" onmouseenter="showCite(event,${JSON.stringify(c).replace(/"/g,'&quot;')})" onmouseleave="hideCite()">[${c.index}] ${esc(c.section_title||'')} p${c.page||'?'}</span>`
+    ).join(' ')+'</div>';
   }
-  msgs.scrollTop = msgs.scrollHeight;
+  msgs.innerHTML+=`<div class="msg assistant"><div class="meta">AI 助手</div>${esc(answer)}${cites}</div>`;
+  msgs.scrollTop=msgs.scrollHeight;
 }
 
-function chatStream() {
-  if (!currentKB) { alert('请先创建知识库'); return; }
-  const proto = $('api-base').value.startsWith('https') ? 'wss' : 'ws';
-  const wsUrl = $('api-base').value.replace(/^https?/, proto) + '/api/chat/stream';
-  ws = new WebSocket(wsUrl);
-  const out = $('stream-output');
-  out.innerHTML = '';
-  $('ws-btn').disabled = true;
+async function sendStreamChat(kb,query){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  const wsUrl=S.getSetting('apiBase','http://localhost:8000').replace(/^https?/,proto)+'/api/chat/stream';
+  const ws=new WebSocket(wsUrl);S.ws=ws;
+  const evtEl=gid('stream-events');evtEl.innerHTML='';
+  const ansEl=gid('answer-stream');ansEl.textContent='';S.streamAnswer='';
+  const msgs=gid('chat-messages');
+  let msgDiv=document.createElement('div');msgDiv.className='msg assistant';
+  msgDiv.innerHTML='<div class="meta">AI 助手 (流式)</div><span id="stream-answer-text"></span>';
+  msgs.appendChild(msgDiv);msgs.scrollTop=msgs.scrollHeight;
+  const txtEl=gid('stream-answer-text');
 
-  ws.onopen = () => {
-    out.innerHTML += `<div class="event"><span class="ev-label ev-info">CONNECT</span>已连接</div>\n`;
-    ws.send(JSON.stringify({query:$('ws-query').value, kb_id:currentKB}));
+  ws.onopen=()=>{ws.send(JSON.stringify({query,kb_id:kb}));};
+  ws.onmessage=(e)=>{
+    const d=JSON.parse(e.data);
+    let cls='badge-info';
+    if(d.event==='answer_delta'){cls='badge-answer';S.streamAnswer+=d.data;txtEl.textContent=S.streamAnswer;ansEl.textContent=S.streamAnswer;}
+    else if(d.event.includes('tool'))cls='badge-tool';
+    else if(d.event==='citation')cls='badge-citation';
+    else if(d.event==='done')cls='badge-done';
+    else if(d.event==='error')cls='badge-error';
+    evtEl.innerHTML+=`<div class="stream-event"><span class="time">${new Date().toLocaleTimeString()}</span><span class="badge ${cls}">${d.event}</span><span style="color:var(--text-secondary)">${typeof d.data==='string'?d.data:JSON.stringify(d.data).slice(0,100)}</span></div>\n`;
+    evtEl.scrollTop=evtEl.scrollHeight;msgs.scrollTop=msgs.scrollHeight;
   };
-  ws.onmessage = (e) => {
-    const d = JSON.parse(e.data);
-    let cls = 'ev-info';
-    if (d.event === 'answer_delta') cls = 'ev-answer';
-    else if (d.event.includes('tool')) cls = 'ev-tool';
-    else if (d.event === 'citation') cls = 'ev-citation';
-    else if (d.event === 'done') { cls = 'ev-done'; $('ws-btn').disabled = false; }
-    else if (d.event === 'error') cls = 'ev-error';
-    const dataStr = typeof d.data === 'string' ? d.data : JSON.stringify(d.data).slice(0,200);
-    out.innerHTML += `<div class="event"><span class="ev-label ${cls}">${d.event}</span>${dataStr}</div>\n`;
-    out.scrollTop = out.scrollHeight;
-  };
-  ws.onclose = () => { $('ws-btn').disabled = false; };
-  ws.onerror = () => { out.innerHTML += `<div class="event"><span class="ev-label ev-error">ERROR</span>连接失败</div>\n`; $('ws-btn').disabled = false; };
+  ws.onclose=()=>{evtEl.innerHTML+=`<div class="stream-event"><span class="time">${new Date().toLocaleTimeString()}</span><span class="badge badge-done">CLOSED</span></div>\n`;};
 }
 
-function cancelStream() { if (ws) { ws.send(JSON.stringify({action:'cancel'})); $('ws-btn').disabled = false; } }
+function toggleStream(){S.streaming=!S.streaming;gid('toggle-stream-btn').textContent=S.streaming?'📡 流式中...':'📡 流式输出';}
 
-async function agentChat() {
-  if (!currentKB) { alert('请先创建知识库'); return; }
-  const r = await api('/api/agent/chat', {
-    method:'POST',
-    body:JSON.stringify({query:$('agent-query').value,kb_id:currentKB,enable_verifier:true})
-  });
-  $('agent-result').textContent = JSON.stringify(r.data, null, 2);
+/* ===== Agent ===== */
+async function runAgent(){
+  const kb=gid('agent-kb-select').value;
+  const query=gid('agent-query').value.trim();
+  if(!kb||!query)return;
+  gid('agent-run-btn').disabled=true;gid('agent-run-btn').textContent='执行中...';
+  const start=Date.now();
+  const r=await api('/api/agent/chat',{method:'POST',body:JSON.stringify({
+    query,kb_id:kb,enable_verifier:gid('agent-verifier').value==='true'
+  })});
+  gid('agent-run-btn').disabled=false;gid('agent-run-btn').textContent='🤖 执行 Agent 工作流';
+  gid('agent-latency').textContent=`耗时 ${Date.now()-start}ms`;
+  if(r.data){
+    gid('agent-answer').textContent=r.data.answer||JSON.stringify(r.data,null,2);
+    gid('agent-steps').textContent=JSON.stringify({
+      status:r.data.status,verification:r.data.verification,
+      citations:r.data.citations?.length+' sources',agent_run_id:r.data.agent_run_id
+    },null,2);
+  }
 }
 
-async function listMCPServers() {
-  const r = await api('/api/mcp/servers');
-  $('mcp-result').textContent = JSON.stringify(r.data, null, 2);
+/* ===== MCP ===== */
+async function loadMCPServers(){
+  const r=await api('/api/mcp/servers');
+  const tbody=gid('mcp-server-tbody');
+  if(r.data&&Array.isArray(r.data)){
+    tbody.innerHTML=r.data.map(s=>`<tr><td>🔌 ${esc(s.name)}</td><td>${s.transport}</td><td style="font-family:monospace;font-size:11px">${esc(s.endpoint||'')}</td><td><span class="status-tag tag-${s.enabled?'ready':'error'}">${s.enabled?'启用':'禁用'}</span></td></tr>`).join('');
+  }
 }
 
-async function listMCPTools() {
-  const r = await api('/api/mcp/tools');
-  $('mcp-result').textContent = JSON.stringify(r.data, null, 2);
+async function loadMCPTools(){
+  const r=await api('/api/mcp/tools');
+  const grid=gid('mcp-tools-grid');
+  if(r.data&&r.data.tools){
+    grid.innerHTML=r.data.tools.map(t=>`<div class="tool-card">
+      <div class="tool-name">🔧 ${esc(t.name)} <span class="perm-badge perm-${(t.permission_level||'user')}">${t.permission_level||'user'}</span></div>
+      <div class="tool-desc">${esc(t.description||'')}</div>
+      <div class="tool-server">${esc(t.server_name||'')}</div>
+    </div>`).join('');
+  }
 }
 
-async function autoSetup() {
-  // 一键：注册 → 创建 KB → 上传示例文档
-  $('reg-user').value = 'demo';
-  $('reg-email').value = 'demo@example.com';
-  await register();
-  if (!token) { await login(); }
-  $('kb-name').value = 'Demo知识库';
-  await createKB();
-  await listKBs();
-  // 创建示例 txt 文件并上传
-  const content = 'Python 是一种高级编程语言，广泛用于数据科学、机器学习、Web 开发等领域。\n\nFastAPI 是一个现代 Python Web 框架，支持异步处理、自动 API 文档生成和类型校验。\n\nRAG（检索增强生成）技术结合了信息检索和文本生成，可以有效减少大语言模型的幻觉问题。';
-  const blob = new Blob([content], {type:'text/plain'});
-  const file = new File([blob], 'demo.txt', {type:'text/plain'});
-  const dt = new DataTransfer();
-  dt.items.add(file);
-  $('file-input').files = dt.files;
-  await uploadDoc();
-  logResult('chat-messages', {status:'ok', data:'一键初始化完成！知识库和示例文档已就绪。'});
+async function callMCPTool(){
+  const r=await api('/api/mcp/tools/call',{method:'POST',body:JSON.stringify({
+    server:gid('mcp-call-server').value,
+    tool:gid('mcp-call-tool').value,
+    arguments:JSON.parse(gid('mcp-call-args').value||'{}')
+  })});
+  gid('mcp-call-result').textContent=JSON.stringify(r.data,null,2);
 }
 
-function logResult(id, r) {
-  const el = $(id);
-  el.innerHTML += `<div class="msg system">[${r.status}] ${JSON.stringify(r.data).slice(0,300)}</div>\n`;
-  el.scrollTop = el.scrollHeight;
+/* ===== Dashboard ===== */
+async function loadDashboard(){
+  await updateStatus();
+  await refreshKBs();
+  // count total chunks
+  let totalChunks=0,totalDocs=0;
+  for(const kb of S.kbList){totalDocs+=kb.document_count||0;totalChunks+=kb.chunk_count||0;}
+  gid('stat-docs').textContent=totalDocs;gid('stat-chunks').textContent=totalChunks;
 }
 
-checkHealth();
+/* ===== Citation Popup ===== */
+function showCite(e,cite){
+  let el=document.querySelector('.citation-popup');
+  if(!el){el=document.createElement('div');el.className='citation-popup';document.body.appendChild(el);}
+  el.innerHTML=`<strong>来源 [${cite.index}]</strong><br>📄 ${esc(cite.document_id||'')}<br>📍 页码: ${cite.page||'?'} · 章节: ${esc(cite.section_title||'')}<br>⭐ 相关度: ${(cite.score||0).toFixed(3)}<br><br><em style="color:var(--text-muted)">${esc((cite.content_preview||'').slice(0,150))}...</em>`;
+  el.style.left=(e.clientX+12)+'px';el.style.top=(e.clientY-10)+'px';el.style.display='block';
+}
+function hideCite(){const el=document.querySelector('.citation-popup');if(el)el.style.display='none';}
+
+/* ===== Helpers ===== */
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function fmtSize(b){if(!b)return'0 B';const u=['B','KB','MB'];let i=0;while(b>=1024&&i<2){b/=1024;i++;}return b.toFixed(1)+' '+u[i];}
+function fmtDate(d){if(!d)return'';return new Date(d).toLocaleDateString('zh-CN');}
+
+/* ===== Init ===== */
+(function init(){
+  const savedBase=S.getSetting('apiBase');if(savedBase)gid('settings-api-base').value=savedBase;
+  const savedToken=S.getSetting('token');if(savedToken)setToken(savedToken);
+  updateStatus();loadDashboard();
+})();
 </script>
 </body>
 </html>
