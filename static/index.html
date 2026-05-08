@@ -331,24 +331,31 @@ tr:hover td{background:var(--bg-tertiary);color:var(--text-primary)}
 /* ===== Global State ===== */
 const S = {token:'',kbList:[],currentKB:'',ws:null,streaming:false,streamAnswer:''};
 
+/* ===== Toast ===== */
+function toast(msg,isErr=false){
+  let el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;top:60px;right:16px;z-index:999;padding:10px 18px;border-radius:8px;font-size:13px;max-width:400px;transition:0.3s;pointer-events:none';document.body.appendChild(el);}
+  el.style.background=isErr?'var(--danger)':'var(--accent)';el.style.color='#fff';el.textContent=msg;el.style.opacity='1';
+  clearTimeout(el._t);el._t=setTimeout(()=>{el.style.opacity='0'},3000);
+}
+
 /* ===== API Helper ===== */
 async function api(path,opts={}){
-  const base=S.getSetting('apiBase','http://localhost:8000');
-  const h={...opts.headers,'Content-Type':'application/json'};
-  if(S.token)h['Authorization']='Bearer '+S.token;
-  const r=await fetch(base+path,{...opts,headers:h});
-  const text=await r.text();
-  try{return{status:r.status,data:JSON.parse(text)};}catch{return{status:r.status,data:{_raw:text}};}
+  const base=S.getSetting('apiBase','');
+  const url=base?base+path:path;
+  const headers={'Content-Type':'application/json'};
+  if(S.token)headers['Authorization']='Bearer '+S.token;
+  if(opts.noCT)delete headers['Content-Type'];
+  try{
+    const r=await fetch(url,{...opts,headers});
+    const text=await r.text();
+    try{return{status:r.status,data:JSON.parse(text)};}catch{return{status:r.status,data:{_raw:text}};}
+  }catch(e){console.error('API:',url,e.message);return{status:0,data:{_raw:'网络错误: '+e.message}};}
 }
 
 /* ===== Settings ===== */
 S.getSetting=function(k,d){try{return localStorage.getItem('rag_'+k)||d}catch{return d}};
 S.setSetting=function(k,v){try{localStorage.setItem('rag_'+k,v)}catch{}};
-
-function saveSettings(){
-  S.setSetting('apiBase',gid('settings-api-base').value);
-  updateStatus();
-}
+function saveSettings(){S.setSetting('apiBase',gid('settings-api-base')?.value||'');updateStatus();}
 
 /* ===== Navigation ===== */
 document.querySelectorAll('.nav-item').forEach(el=>{
@@ -358,7 +365,7 @@ document.querySelectorAll('.nav-item').forEach(el=>{
     const page=el.dataset.page;
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     const pg=gid('page-'+page);if(pg)pg.classList.add('active');
-    gid('page-title').textContent=el.textContent.replace(/\s+/,' ').trim();
+    const title=gid('page-title');if(title)title.textContent=el.textContent.replace(/\\s+/,' ').trim();
     if(page==='chat')refreshKBs();
     if(page==='knowledge')refreshKBs().then(()=>loadDocuments());
     if(page==='mcp')loadMCPServers();
@@ -409,29 +416,35 @@ async function updateStatus(){
 }
 
 /* ===== Auth ===== */
-function showAuthModal(){gid('auth-modal').style.display='flex';}
-function hideAuthModal(){gid('auth-modal').style.display='none';}
+function showAuthModal(){const el=gid('auth-modal');if(el)el.style.display='flex';}
+function hideAuthModal(){const el=gid('auth-modal');if(el)el.style.display='none';}
 
 async function doRegister(){
-  const r=await api('/api/auth/register',{method:'POST',body:JSON.stringify({
-    username:gid('reg-user').value,email:gid('reg-email').value,password:gid('reg-pass').value
-  })});
-  if(r.data.access_token){setToken(r.data.access_token);hideAuthModal();}
-  else alert('注册失败: '+JSON.stringify(r.data));
+  const u=gid('reg-user'),e=gid('reg-email'),p=gid('reg-pass');
+  if(!u||!e||!p){toast('表单未加载完整',true);return;}
+  const un=u.value.trim(),em=e.value.trim(),pw=p.value;
+  if(!un||!em||!pw){toast('请填写所有字段',true);return;}
+  toast('正在注册...');
+  const r=await api('/api/auth/register',{method:'POST',body:JSON.stringify({username:un,email:em,password:pw})});
+  if(r.data&&r.data.access_token){setToken(r.data.access_token);hideAuthModal();toast('注册成功！');}
+  else toast('注册失败: HTTP '+r.status+' '+JSON.stringify(r.data).slice(0,200),true);
 }
 
 async function doLogin(){
-  const r=await api('/api/auth/login',{method:'POST',body:JSON.stringify({
-    username:gid('login-user').value,password:gid('login-pass').value
-  })});
-  if(r.data.access_token){setToken(r.data.access_token);hideAuthModal();}
-  else alert('登录失败: '+JSON.stringify(r.data));
+  const u=gid('login-user'),p=gid('login-pass');
+  if(!u||!p){toast('表单未加载完整',true);return;}
+  const un=u.value.trim(),pw=p.value;
+  if(!un||!pw){toast('请填写用户名和密码',true);return;}
+  toast('正在登录...');
+  const r=await api('/api/auth/login',{method:'POST',body:JSON.stringify({username:un,password:pw})});
+  if(r.data&&r.data.access_token){setToken(r.data.access_token);hideAuthModal();toast('登录成功！');}
+  else toast('登录失败: HTTP '+r.status+' '+JSON.stringify(r.data).slice(0,200),true);
 }
 
 function setToken(tk){
-  S.token=tk;S.setSetting('token',tk);
-  gid('token-bar').textContent='🔑 '+tk.slice(0,36)+'...';
-  gid('settings-token').value=tk;
+  if(!tk)return;S.token=tk;S.setSetting('token',tk);
+  const bar=gid('token-bar');if(bar)bar.textContent='🔑 '+tk.slice(0,36)+'...';
+  const inp=gid('settings-token');if(inp)inp.value=tk;
 }
 
 /* ===== KB Management ===== */
