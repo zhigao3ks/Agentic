@@ -1,4 +1,4 @@
-# MCP-Agentic RAG 后端系统 — 使用文档
+# MCP-Agentic RAG 系统 — 使用文档
 
 ## 1. 环境准备
 
