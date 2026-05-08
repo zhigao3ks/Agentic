@@ -26,7 +26,12 @@ async def chat(
     kb_id = uuid.UUID(body.get("kb_id", ""))
     session_id = body.get("session_id")
 
-    result = await rag_service.ask(query, kb_id, db)
+    # 加载对话历史
+    history = []
+    if session_id:
+        history = await rag_service.load_conversation_history(db, uuid.UUID(str(session_id)))
+
+    result = await rag_service.ask(query, kb_id, db, history=history)
 
     # 保存会话和消息
     if not session_id:
