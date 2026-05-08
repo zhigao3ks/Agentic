@@ -145,7 +145,7 @@ curl -s -X POST http://localhost:8000/api/auth/login \
 ### 1.4 获取当前用户信息
 
 ```bash
-TOKEN="your-jwt-token-here"
+TOKEN="sk-faebd51670e446f3ac6375e496764515"
 
 curl -s http://localhost:8000/api/auth/me \
   -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
