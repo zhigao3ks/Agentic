@@ -11,10 +11,14 @@ _ALLOWED_MIME_TYPES = {
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "text/markdown",
+    "text/x-markdown",
     "text/plain",
     "text/csv",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
+# 通用 MIME 类型 — curl、浏览器等客户端在上传未知类型文件时可能发送此类型
+# 此时只依赖扩展名校验，不阻塞合法文件
+_GENERIC_MIME_TYPES = {"application/octet-stream"}
 _MAX_SIZE_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 
@@ -36,7 +40,7 @@ def validate_upload(file: UploadFile) -> str:
     if ext not in _ALLOWED_EXTENSIONS:
         raise ValidationException(detail=f"Unsupported file type: .{ext}")
 
-    if file.content_type and file.content_type not in _ALLOWED_MIME_TYPES:
+    if file.content_type and file.content_type not in _ALLOWED_MIME_TYPES and file.content_type not in _GENERIC_MIME_TYPES:
         raise ValidationException(detail=f"Unsupported MIME type: {file.content_type}")
 
     # 注：Starlette 1.0 的 UploadFile.size 始终为 None，
