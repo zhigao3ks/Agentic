@@ -40,6 +40,8 @@ async def _startup():
                       "python -m app.mcp_servers.knowledge_base.server", timeout=30)
     registry.register("sql-query-mcp", "stdio",
                       "python -m app.mcp_servers.sql_query.server", timeout=30)
+    registry.register("chart-generation-mcp", "stdio",
+                      "python -m app.mcp_servers.chart_generation.server", timeout=30)
     logger.info("mcp servers registered")
 
 
@@ -58,6 +60,7 @@ from app.api.chat import router as chat_router
 from app.api.document import router as doc_router
 from app.api.knowledge_base import router as kb_router
 from app.api.mcp import router as mcp_router
+from app.api.model_logs import router as model_logs_router
 from app.api.retrieval import router as retrieval_router
 from app.api.ws import router as ws_router
 
@@ -69,6 +72,7 @@ app.include_router(chat_router)
 app.include_router(agent_router)
 app.include_router(mcp_router)
 app.include_router(ws_router)
+app.include_router(model_logs_router)
 
 # 静态文件 (前端联调页面) → 访问 http://localhost:8000/app
 import os

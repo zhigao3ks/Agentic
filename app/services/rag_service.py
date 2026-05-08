@@ -56,10 +56,38 @@ async def ask(
     llm_svc = llm or dependencies.get_llm_service()
     answer = await llm_svc.generate(prompt, system_prompt=RAG_SYSTEM_PROMPT)
 
+    # 3a. 记录模型调用日志
+    if db:
+        await _log_llm_call(db, llm_svc, prompt, answer)
+
     # 4. 引用溯源
     citations_list = citation.extract_citations(answer, enriched)
 
     return {"answer": answer, "citations": citations_list, "chunks": enriched}
+
+
+async def _log_llm_call(db, llm_svc, prompt, answer):
+    """异步记录 LLM 调用日志。"""
+    try:
+        from app.services.model_logger import log_llm_call
+
+        model_name = getattr(llm_svc, "model", "unknown")
+        usage = getattr(llm_svc, "last_usage", None) or {}
+        latency = getattr(llm_svc, "last_latency_ms", 0)
+
+        await log_llm_call(
+            db,
+            model_name=model_name,
+            prompt_preview=prompt,
+            response_preview=answer,
+            prompt_tokens=usage.get("prompt_tokens"),
+            completion_tokens=usage.get("completion_tokens"),
+            total_tokens=usage.get("total_tokens"),
+            latency_ms=latency,
+            status="success",
+        )
+    except Exception:
+        pass  # 日志失败不影响主流程
 
 
 def _build_prompt_with_history(context: str, query: str, history: list[dict]) -> str:

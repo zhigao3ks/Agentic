@@ -6,6 +6,7 @@ from app.models.chunk import Chunk
 from app.models.document import Document
 from app.models.knowledge_base import KnowledgeBase
 from app.models.mcp import MCPServer, MCPTool, MCPToolCall
+from app.models.model_call_log import ModelCallLog
 from app.models.user import User
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "MCPServer",
     "MCPTool",
     "MCPToolCall",
+    "ModelCallLog",
     "User",
 ]
