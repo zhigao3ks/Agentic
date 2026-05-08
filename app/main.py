@@ -28,6 +28,13 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def _startup():
+    from app.db.session import init_db
+    await init_db()
+    logger.info("database tables initialized")
+
+
 @app.exception_handler(AppException)
 async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:
     logger.warning("app_exception", error_code=exc.error_code, detail=exc.detail)
